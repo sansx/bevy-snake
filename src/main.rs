@@ -1,6 +1,6 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, transform};
 
-struct SnakeHead {}
+struct SnakeHead;
 
 struct Materials {
     head_material: Handle<ColorMaterial>,
@@ -22,9 +22,17 @@ fn spawn_snake( commands: &mut Commands, materials: Res<Materials> ){
   .with(SnakeHead);
 }
 
+fn snake_movement( mut head_positions: Query<( &SnakeHead, &mut Transform )> ){
+  for ( _head, mut transform ) in  head_positions.iter_mut() {
+      transform.translation.y += 2.;
+  }
+}
+
 fn main() {
     App::build()
         .add_startup_system(setup.system()) // <--
+        .add_startup_stage( "game_setup", SystemStage::single( spawn_snake.system()) )
+        .add_system(snake_movement.system())
         .add_plugins(DefaultPlugins)
         .run();
 }
