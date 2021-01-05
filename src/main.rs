@@ -1,11 +1,35 @@
 use bevy::prelude::*;
 use bevy::render::pass::ClearColor;
+use rand::random;
 use std::time::Duration;
 
 const ARENA_WIDTH: u32 = 10;
 const ARENA_HEIGHT: u32 = 10;
 
-struct SnakeHead;
+struct SnakeHead {
+    direction: Direction,
+}
+
+struct SnakeMoveTimer(Timer);
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+enum Direction {
+    Left,
+    Up,
+    Right,
+    Down,
+}
+
+impl Direction {
+    fn opposite(self) -> Self {
+        match self {
+            Self::Left => Self::Right,
+            Self::Right => Self::Left,
+            Self::Up => Self::Down,
+            Self::Down => Self::Up,
+        }
+    }
+}
 
 struct Food;
 
@@ -74,6 +98,27 @@ fn position_translation(windows: Res<Windows>, mut q: Query<(&Position, &mut Tra
     }
 }
 
+fn food_spawner(
+    commands: &mut Commands,
+    materials: Res<Materials>,
+    time: Res<Time>,
+    mut timer: Local<FoodSpawnTimer>,
+) {
+    if timer.0.tick(time.delta_seconds()).finished() {
+        commands
+            .spawn(SpriteBundle {
+                material: materials.food_material.clone(),
+                ..Default::default()
+            })
+            .with(Food)
+            .with(Position {
+                x: (random::<f32>() * ARENA_WIDTH as f32) as i32,
+                y: (random::<f32>() * ARENA_HEIGHT as f32) as i32,
+            })
+            .with(Size::square(0.8));
+    }
+}
+
 fn spawn_snake(commands: &mut Commands, materials: Res<Materials>) {
     commands
         .spawn(SpriteBundle {
@@ -81,7 +126,9 @@ fn spawn_snake(commands: &mut Commands, materials: Res<Materials>) {
             sprite: Sprite::new(Vec2::new(10.0, 10.0)),
             ..Default::default()
         })
-        .with(SnakeHead)
+        .with(SnakeHead {
+            direction: Direction::Up,
+        })
         .with(Position { x: 3, y: 3 })
         .with(Size::square(0.8));
 }
@@ -115,9 +162,14 @@ fn main() {
             ..Default::default()
         })
         .add_resource(ClearColor(Color::rgb(0.04, 0.04, 0.04)))
+        .add_resource(SnakeMoveTimer(Timer::new(
+            Duration::from_millis(150. as u64),
+            true,
+        )))
         .add_startup_system(setup.system()) // <--
         .add_startup_stage("game_setup", SystemStage::single(spawn_snake.system()))
         .add_system(snake_movement.system())
+        .add_system(food_spawner.system())
         .add_system(position_translation.system())
         .add_system(size_scaling.system())
         .add_plugins(DefaultPlugins)
