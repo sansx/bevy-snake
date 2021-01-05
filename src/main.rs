@@ -2,11 +2,19 @@ use bevy::prelude::*;
 use bevy::render::pass::ClearColor;
 use std::time::Duration;
 
-
 const ARENA_WIDTH: u32 = 10;
 const ARENA_HEIGHT: u32 = 10;
 
 struct SnakeHead;
+
+struct Food;
+
+struct FoodSpawnTimer(Timer);
+impl Default for FoodSpawnTimer {
+    fn default() -> Self {
+        Self(Timer::new(Duration::from_millis(1000), true))
+    }
+}
 
 struct Materials {
     head_material: Handle<ColorMaterial>,
