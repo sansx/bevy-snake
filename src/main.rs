@@ -51,7 +51,7 @@ struct Materials {
     food_material: Handle<ColorMaterial>,
 }
 
-#[derive(Default, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Default, Clone, Copy, PartialEq, Eq, Hash, Debug)]
 struct Position {
     x: i32,
     y: i32,
@@ -227,6 +227,7 @@ fn snake_movement(
             .for_each(|(pos, segment)| {
                 *positions.get_mut(*segment).unwrap() = *pos;
             });
+        println!("{:?}", segment_positions.last().unwrap());
         last_tail_position.0 = Some(*segment_positions.last().unwrap());
     }
 }
@@ -290,11 +291,11 @@ fn main() {
         .add_event::<GrowthEvent>()
         .add_startup_system(setup.system())
         .add_startup_stage("game_setup", SystemStage::single(spawn_snake.system()))
-        .add_system(snake_growth.system())
-        .add_system(snake_movement.system())
         .add_system(snake_timer.system())
-        .add_system(food_spawner.system())
+        .add_system(snake_movement.system())
         .add_system(snake_eating.system())
+        .add_system(snake_growth.system())
+        .add_system(food_spawner.system())
         .add_system(position_translation.system())
         .add_system(size_scaling.system())
         .add_plugins(DefaultPlugins)
