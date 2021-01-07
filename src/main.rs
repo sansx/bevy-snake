@@ -209,16 +209,32 @@ fn snake_movement(
         }
         match &head.direction {
             Direction::Left => {
-                head_pos.x -= 1;
+                if head_pos.x == 0 {
+                    head_pos.x = ARENA_WIDTH as i32;
+                } else {
+                    head_pos.x -= 1;
+                }
             }
             Direction::Right => {
-                head_pos.x += 1;
+                if head_pos.x == ARENA_WIDTH as i32 {
+                    head_pos.x = 0;
+                } else {
+                    head_pos.x += 1;
+                }
             }
             Direction::Up => {
-                head_pos.y += 1;
+                if head_pos.y == ARENA_HEIGHT as i32 {
+                    head_pos.y = 0;
+                } else {
+                    head_pos.y += 1;
+                }
             }
             Direction::Down => {
-                head_pos.y -= 1;
+                if head_pos.y == 0 {
+                    head_pos.y = ARENA_HEIGHT as i32;
+                } else {
+                    head_pos.y -= 1;
+                }
             }
         };
         segment_positions
