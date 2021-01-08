@@ -6,6 +6,8 @@ use std::time::Duration;
 const ARENA_WIDTH: u32 = 10;
 const ARENA_HEIGHT: u32 = 10;
 
+struct GameOverEvent;
+
 struct SnakeHead {
     direction: Direction,
 }
@@ -182,6 +184,7 @@ fn snake_movement(
     mut heads: Query<(Entity, &mut SnakeHead)>,
     mut last_tail_position: ResMut<LastTailPosition>,
     mut positions: Query<&mut Position>,
+    mut game_over_events: ResMut<Events<GameOverEvent>>,
 ) {
     if let Some((head_entity, mut head)) = heads.iter_mut().next() {
         let segment_positions = segments
@@ -190,6 +193,18 @@ fn snake_movement(
             .map(|e| *positions.get_mut(*e).unwrap())
             .collect::<Vec<Position>>();
         let mut head_pos = positions.get_mut(head_entity).unwrap();
+        // hit a wall
+        // if head_pos.x < 0
+        //     || head_pos.y < 0
+        //     || head_pos.x as u32 >= ARENA_WIDTH
+        //     || head_pos.y as u32 >= ARENA_HEIGHT
+        // {
+        //     game_over_events.send(GameOverEvent);
+        // }
+        if segment_positions.contains(&head_pos) {
+          println!("nooo");
+            game_over_events.send(GameOverEvent);
+        }
         let dir: Direction = if keyboard_input.pressed(KeyCode::Left) {
             Direction::Left
         } else if keyboard_input.pressed(KeyCode::Down) {
@@ -289,6 +304,23 @@ fn snake_timer(time: Res<Time>, mut snake_timer: ResMut<SnakeMoveTimer>) {
     snake_timer.0.tick(time.delta_seconds());
 }
 
+fn game_over(
+    commands: &mut Commands,
+    mut reader: Local<EventReader<GameOverEvent>>,
+    game_over_events: Res<Events<GameOverEvent>>,
+    materials: Res<Materials>,
+    segments_res: ResMut<SnakeSegments>,
+    food: Query<Entity, With<Food>>,
+    segments: Query<Entity, With<SnakeSegment>>,
+) {
+    if reader.iter(&game_over_events).next().is_some() {
+        for ent in food.iter().chain(segments.iter()) {
+            commands.despawn(ent);
+        }
+        spawn_snake(commands, materials, segments_res);
+    }
+}
+
 fn main() {
     App::build()
         .add_resource(WindowDescriptor {
@@ -305,6 +337,7 @@ fn main() {
         .add_resource(SnakeSegments::default())
         .add_resource(LastTailPosition::default())
         .add_event::<GrowthEvent>()
+        .add_event::<GameOverEvent>()
         .add_startup_system(setup.system())
         .add_startup_stage("game_setup", SystemStage::single(spawn_snake.system()))
         .add_system(snake_timer.system())
@@ -314,6 +347,7 @@ fn main() {
         .add_system(food_spawner.system())
         .add_system(position_translation.system())
         .add_system(size_scaling.system())
+        .add_system(game_over.system())
         .add_plugins(DefaultPlugins)
         .run();
 }
